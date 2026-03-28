@@ -3,120 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tajik Pro: Telegram Edition</title>
+    <title>Tajik Pro: Leaderboard Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Используем переменные Телеграма, если они есть, иначе — наши цвета */
             --bg: var(--tg-theme-bg-color, #0F0F1A);
             --surface: var(--tg-theme-secondary-bg-color, #1A1A2E);
-            --primary: var(--tg-theme-button-color, #E8A045);
+            --primary: var(--tg-theme-button-color, #FFB74D); /* Более мягкий оранжевый */
             --text: var(--tg-theme-text-color, #E0E0E0);
-            --accent: #2D6A4F;
+            --hint: #888;
+            --success: #4CAF50;
+            --error: #FF5252;
+            --gold: #FFD700;
+            --silver: #C0C0C0;
+            --bronze: #CD7F32;
             --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        header { padding: 15px 20px; background: var(--surface); display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); }
+        /* ХЕДЕР */
+        header { padding: 10px 20px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .user-block { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 35px; height: 35px; background: var(--primary); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; text-transform: uppercase; }
+        #user-name { font-weight: 500; font-size: 1rem; }
+        #xp-display { font-weight: bold; color: var(--primary); font-size: 1.1rem; }
 
-        .page { position: absolute; top: 60px; bottom: 0; width: 100%; padding: 20px; display: none; overflow-y: auto; transition: 0.3s; }
-        .page.active { display: block; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* РОУТЕР И СТРАНИЦЫ */
+        main { flex: 1; position: relative; overflow: hidden; }
+        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; display: none; overflow-y: auto; opacity: 0; transition: opacity 0.3s ease; }
+        .page.active { display: block; opacity: 1; z-index: 10; }
 
-        /* Игровые элементы */
-        .swipe-card { width: 260px; height: 320px; background: var(--primary); color: var(--tg-theme-button-text-color, #000); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: bold; margin: 20px auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .chip { background: var(--surface); border: 1px solid var(--primary); padding: 12px 20px; border-radius: 12px; cursor: pointer; margin: 5px; display: inline-block; }
-        .btn { background: var(--primary); color: var(--tg-theme-button-text-color, #000); border: none; padding: 18px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 1rem; margin-top: 10px; }
-        
-        .sentence-area { min-height: 100px; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 15px; margin: 20px 0; border: 1px dashed var(--primary); }
+        /* ГЛАВНОЕ МЕНЮ (КАРТОЧКИ) */
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 10px; }
+        .menu-card { background: var(--surface); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.03); display: flex; align-items: center; gap: 15px; transition: var(--transition); cursor: pointer; position: relative; overflow: hidden; }
+        .menu-card:active { transform: scale(0.97); background: rgba(255,255,255,0.03); }
+        .menu-card-icon { font-size: 2rem; width: 50px; text-align: center; }
+        .menu-card-info { flex: 1; }
+        .menu-card-title { font-weight: bold; font-size: 1.1rem; color: var(--text); }
+        .menu-card-subtitle { font-size: 0.85rem; color: var(--hint); margin-top: 2px; }
+        .menu-card-xp { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: var(--primary); font-weight: bold; }
+
+        /* Навигация (Таб-бар) */
+        .tab-bar { background: var(--surface); display: flex; justify-content: space-around; padding: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .tab-item { color: var(--hint); text-align: center; flex: 1; padding: 5px; transition: var(--transition); cursor: pointer; }
+        .tab-item.active { color: var(--primary); }
+        .tab-icon { font-size: 1.3rem; margin-bottom: 2px; }
+        .tab-label { font-size: 0.75rem; font-weight: 500; }
+
+        /* ТАБЛИЦА ЛИДЕРОВ */
+        .leaderboard-list { margin-top: 15px; }
+        .lb-item { display: flex; align-items: center; gap: 12px; padding: 12px 15px; background: var(--surface); border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.02); }
+        .lb-item.me { border: 1px solid var(--primary); background: rgba(255,183,77,0.05); }
+        .lb-rank { width: 25px; font-weight: bold; font-size: 1rem; text-align: center; }
+        .rank-1 { color: var(--gold); } .rank-2 { color: var(--silver); } .rank-3 { color: var(--bronze); }
+        .lb-avatar { width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; }
+        .lb-info { flex: 1; }
+        .lb-name { font-weight: 500; font-size: 0.95rem; }
+        .lb-xp { font-size: 0.85rem; color: var(--primary); font-weight: bold; }
+
+        /* ИГРОВЫЕ ЭЛЕМЕНТЫ (СТАРЫЕ, НО ОБНОВЛЕННЫЕ) */
+        .swipe-card { width: 100%; max-width: 300px; height: 300px; background: var(--primary); color: #000; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: bold; margin: 20px auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: var(--transition); }
+        .sentence-area { min-height: 80px; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 15px; margin: 15px 0; border: 1px dashed rgba(255,255,255,0.1); display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
+        .chip { background: var(--surface); border: 1px solid rgba(255,255,255,0.1); padding: 10px 16px; border-radius: 10px; cursor: pointer; transition: var(--transition); font-size: 0.95rem; }
+        .chip:active { transform: scale(0.95); background: rgba(255,255,255,0.05); }
+        .chip.selected { border-color: var(--primary); color: var(--primary); opacity: 0.5; }
+        .btn { background: var(--primary); color: #000; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 1rem; margin-top: 10px; cursor: pointer; transition: var(--transition); }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; }
+        p.subtitle { color: var(--hint); font-size: 0.9rem; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div id="user-name">Салом!</div>
+    <div class="user-block">
+        <div class="user-avatar" id="user-avatar-placeholder">U</div>
+        <div id="user-name">Мехмон</div>
+    </div>
     <div style="font-weight: bold;">⭐ <span id="xp-display">0</span></div>
 </header>
 
 <main id="app-router">
-    <section id="home" class="page active">
-        <h2 id="welcome-msg">Омӯзиши забон</h2>
-        <p id="srs-status" style="color: var(--primary); margin: 10px 0 25px 0;"></p>
+    <section id="page-home" class="page active">
+        <h2>Омӯзиш</h2>
+        <p class="subtitle">Игры для изучения языка</p>
         
-        <button class="btn" onclick="App.router.go('game-duels')">⚔️ Дуэли слов</button>
-        <button class="btn" onclick="App.router.go('game-builder')">🧱 Сборщик фраз</button>
-        <button class="btn" style="background: var(--surface); color: var(--text); margin-top: 40px;" onclick="App.platform.close()">Выйти</button>
+        <div class="menu-grid">
+            <div class="menu-card" onclick="App.router.go('game-duels')">
+                <div class="menu-card-xp">+10 XP</div>
+                <div class="menu-card-icon">⚔️</div>
+                <div class="menu-card-info">
+                    <div class="menu-card-title">Дуэли слов</div>
+                    <div class="menu-card-subtitle">Выбери правильный перевод</div>
+                </div>
+            </div>
+            
+            <div class="menu-card" onclick="App.router.go('game-builder')">
+                <div class="menu-card-xp">+20 XP</div>
+                <div class="menu-card-icon">🧱</div>
+                <div class="menu-card-info">
+                    <div class="menu-card-title">Сборщик фраз</div>
+                    <div class="menu-card-subtitle">Составь предложение из слов</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-leaderboard" class="page">
+        <h2>Пешсафон</h2>
+        <p class="subtitle">Топ игроков этой недели</p>
+        <div class="leaderboard-list" id="lb-list-container">
+            </div>
     </section>
 
     <section id="game-duels" class="page">
         <div id="active-card" class="swipe-card">...</div>
         <div style="display:flex; gap:10px;">
-            <div id="t-left" style="flex:1; padding:20px; border:1px solid var(--primary); border-radius:12px; text-align:center;"></div>
-            <div id="t-right" style="flex:1; padding:20px; border:1px solid var(--primary); border-radius:12px; text-align:center;"></div>
+            <div id="t-left" style="flex:1; padding:20px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; text-align:center; font-weight:500; cursor:pointer;"></div>
+            <div id="t-right" style="flex:1; padding:20px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; text-align:center; font-weight:500; cursor:pointer;"></div>
         </div>
     </section>
 
     <section id="game-builder" class="page">
-        <h3 id="b-task" style="text-align:center"></h3>
+        <h3 id="b-task" style="text-align:center; margin-bottom: 10px;"></h3>
         <div id="s-target" class="sentence-area"></div>
-        <div id="w-pool" style="text-align:center"></div>
+        <div id="w-pool" style="text-align:center; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
         <button class="btn" id="check-btn" onclick="App.modules['game-builder'].check()">Проверить</button>
     </section>
 </main>
+
+<nav class="tab-bar">
+    <div class="tab-item active" onclick="App.router.go('page-home')" id="tab-home">
+        <div class="tab-icon">🏠</div>
+        <div class="tab-label">Главная</div>
+    </div>
+    <div class="tab-item" onclick="App.router.go('page-leaderboard')" id="tab-leaderboard">
+        <div class="tab-icon">🏆</div>
+        <div class="tab-label">Рейтинг</div>
+    </div>
+</nav>
 
 <script>
 const App = {
     tg: window.Telegram.WebApp,
     
     state: {
-        xp: parseInt(localStorage.getItem('tg_xp')) || 0,
-        srs: JSON.parse(localStorage.getItem('tg_srs')) || {}
+        xp: parseInt(localStorage.getItem('tg_xp_v2')) || 0,
+        // Имитация базы данных лидеров
+        fakeLeaders: [
+            {name: "Davron_Pro", xp: 2550},
+            {name: "Malika_Learn", xp: 1980},
+            {name: "Umed_99", xp: 1420},
+            {name: "Sitora_TJ", xp: 950},
+            {name: "Parviz_AI", xp: 610}
+        ]
     },
 
     db: {
         vocab: [
             {id:1, cyr:'Китоб', ru:'Книга'}, {id:2, cyr:'Модар', ru:'Мать'},
-            {id:3, cyr:'Нон', ru:'Хлеб'}, {id:4, cyr:'Об', ru:'Вода'}
+            {id:3, cyr:'Нон', ru:'Хлеб'}, {id:4, cyr:'Об', ru:'Вода'},
+            {id:5, cyr:'Хона', ru:'Дом'}, {id:6, cyr:'Шаҳр', ru:'Город'}
         ],
         sentences: [
-            {id:101, ru:'Я иду в школу', tg:['Ман', 'ба', 'мактаб', 'меравам']}
+            {id:101, ru:'Я иду в школу', tg:['Ман', 'ба', 'мактаб', 'меравам']},
+            {id:102, ru:'Мать читает книгу', tg:['Модар', 'китоб', 'мехонад']}
         ]
     },
 
     init() {
         this.tg.ready();
-        this.tg.expand(); // Развернуть на весь экран
-        this.platform.applyTheme();
+        this.tg.expand();
         this.progress.sync();
         
-        // Кнопка назад в Телеграме
-        this.tg.BackButton.onClick(() => this.router.go('home'));
+        // Обработка кнопки "Назад" в ТГ
+        this.tg.BackButton.onClick(() => {
+            if (document.getElementById('page-home').classList.contains('active')) {
+                this.tg.close();
+            } else {
+                this.router.go('page-home');
+            }
+        });
     },
 
     router: {
         go(pageId) {
+            // Скрываем все страницы
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
+            // Скрываем нижний таб-бар в играх
+            const tabBar = document.querySelector('.tab-bar');
             
-            // Показываем кнопку назад, если мы не на главной
-            if (pageId === 'home') App.tg.BackButton.hide();
-            else App.tg.BackButton.show();
+            if (pageId.startsWith('game-')) {
+                App.tg.BackButton.show();
+                tabBar.style.display = 'none';
+            } else {
+                // Если мы на главных табах, показываем таб-бар и обновляем активную иконку
+                tabBar.style.display = 'flex';
+                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+                
+                if (pageId === 'page-home') {
+                    document.getElementById('tab-home').classList.add('active');
+                    App.tg.BackButton.hide();
+                } else if (pageId === 'page-leaderboard') {
+                    document.getElementById('tab-leaderboard').classList.add('active');
+                    App.tg.BackButton.show();
+                    App.modules['page-leaderboard'].init(); // Загружаем рейтинг
+                }
+            }
 
-            if (App.modules[pageId]?.init) App.modules[pageId].init();
+            // Показываем нужную страницу
+            document.getElementById(pageId).classList.add('active');
+            if (App.modules[pageId]?.init && !pageId.startsWith('page-')) App.modules[pageId].init();
         }
     },
 
     modules: {
+        'page-leaderboard': {
+            init() {
+                const container = document.getElementById('lb-list-container');
+                container.innerHTML = '';
+                
+                // Создаем полный список: фейки + ты
+                let allItems = [...App.state.fakeLeaders];
+                const userName = App.tg.initDataUnsafe?.user?.first_name || "Ты";
+                allItems.push({name: userName, xp: App.state.xp, isMe: true});
+                
+                // Сортируем по XP
+                allItems.sort((a, b) => b.xp - a.xp);
+                
+                allItems.forEach((player, index) => {
+                    const rank = index + 1;
+                    const item = document.createElement('div');
+                    item.className = `lb-item ${player.isMe ? 'me' : ''}`;
+                    
+                    let rankClass = '';
+                    if (rank === 1) rankClass = 'rank-1';
+                    else if (rank === 2) rankClass = 'rank-2';
+                    else if (rank === 3) rankClass = 'rank-3';
+                    
+                    const avatarChar = player.name.charAt(0).toUpperCase();
+                    
+                    item.innerHTML = `
+                        <div class="lb-rank ${rankClass}">${rank}</div>
+                        <div class="lb-avatar">${avatarChar}</div>
+                        <div class="lb-info">
+                            <div class="lb-name">${player.name} ${player.isMe ? '(Ты)' : ''}</div>
+                            <div class="lb-xp">${player.xp} XP</div>
+                        </div>
+                        ${rank <= 3 ? `<div class="lb-medal">${rank===1?'🥇':rank===2?'🥈':'🥉'}</div>` : ''}
+                    `;
+                    container.appendChild(item);
+                });
+            }
+        },
         'game-duels': {
             init() { this.setup(); },
             setup() {
                 this.curr = App.db.vocab[Math.floor(Math.random()*App.db.vocab.length)];
                 const card = document.getElementById('active-card');
                 card.textContent = this.curr.cyr;
-                card.style.transform = `scale(1)`;
                 card.style.background = 'var(--primary)';
+                card.style.color = '#000';
 
                 let wrong = App.db.vocab[Math.floor(Math.random()*App.db.vocab.length)];
                 while(wrong.id === this.curr.id) wrong = App.db.vocab[Math.floor(Math.random()*App.db.vocab.length)];
@@ -125,17 +275,19 @@ const App = {
                 const l = document.getElementById('t-left'), r = document.getElementById('t-right');
                 l.textContent = isL ? this.curr.ru : wrong.ru; l.onclick = () => this.verify(isL);
                 r.textContent = isL ? wrong.ru : this.curr.ru; r.onclick = () => this.verify(!isL);
+                l.style.borderColor = r.style.borderColor = 'rgba(255,255,255,0.1)';
             },
             verify(ok) {
+                const card = document.getElementById('active-card');
                 if(ok) {
                     App.platform.haptic('success');
                     App.progress.addXP(10);
-                    document.getElementById('active-card').style.background = "#4CAF50";
+                    card.style.background = var(--success); card.style.color = '#fff';
                 } else {
                     App.platform.haptic('error');
-                    document.getElementById('active-card').style.background = "#FF5252";
+                    card.style.background = var(--error); card.style.color = '#fff';
                 }
-                setTimeout(() => this.setup(), 500);
+                setTimeout(() => this.setup(), 600);
             }
         },
         'game-builder': {
@@ -152,7 +304,16 @@ const App = {
                     t.appendChild(c);
                 });
                 const p = document.getElementById('w-pool'); p.innerHTML = '';
-                [...this.curr.tg].sort(()=>Math.random()-0.5).forEach(w => {
+                
+                // Создаем пул доступных слов (те, что еще не в ответе)
+                let availableWords = [...this.curr.tg];
+                this.ans.forEach(usedWord => {
+                    const idx = availableWords.indexOf(usedWord);
+                    if (idx > -1) availableWords.splice(idx, 1);
+                });
+                
+                // Перемешиваем и рендерим пул
+                availableWords.sort(()=>Math.random()-0.5).forEach(w => {
                     const c = document.createElement('div'); c.className='chip'; c.textContent=w;
                     c.onclick=() => { this.ans.push(w); this.render(); };
                     p.appendChild(c);
@@ -160,8 +321,20 @@ const App = {
             },
             check() {
                 const ok = JSON.stringify(this.ans) === JSON.stringify(this.curr.tg);
-                if(ok) { App.platform.haptic('success'); App.progress.addXP(20); this.init(); }
-                else { App.platform.haptic('error'); alert("Попробуй еще раз"); this.ans=[]; this.render(); }
+                if(ok) { 
+                    App.platform.haptic('success'); App.progress.addXP(20); 
+                    document.getElementById('check-btn').style.background = var(--success);
+                    setTimeout(() => {
+                        document.getElementById('check-btn').style.background = var(--primary);
+                        this.init();
+                    }, 800);
+                }
+                else { 
+                    App.platform.haptic('error');
+                    document.getElementById('check-btn').style.background = var(--error);
+                    alert("Попробуй еще раз (Слова должны быть в точном порядке)"); 
+                    setTimeout(() => document.getElementById('check-btn').style.background = var(--primary), 800);
+                }
             }
         }
     },
@@ -170,29 +343,28 @@ const App = {
         addXP(v) { this.sync(v); },
         sync(v = 0) {
             App.state.xp += v;
-            localStorage.setItem('tg_xp', App.state.xp);
+            localStorage.setItem('tg_xp_v2', App.state.xp); // Используем новый ключ для сброса старого XP
             document.getElementById('xp-display').textContent = App.state.xp;
             
-            // Если есть имя в ТГ, пишем его
             const user = App.tg.initDataUnsafe?.user;
-            if (user) document.getElementById('user-name').textContent = `Салом, ${user.first_name}!`;
+            if (user) {
+                document.getElementById('user-name').textContent = `${user.first_name}`;
+                const av = document.getElementById('user-avatar-placeholder');
+                av.textContent = user.first_name.charAt(0).toUpperCase();
+                av.style.background = App.tg.themeParams.button_color || '#FFB74D';
+            }
         }
     },
 
     platform: {
-        applyTheme() {
-            document.documentElement.style.setProperty('--bg', App.tg.themeParams.bg_color);
-            document.documentElement.style.setProperty('--text', App.tg.themeParams.text_color);
-        },
         haptic(type) {
-            if (this.isTG()) App.tg.HapticFeedback.notificationOccurred(type);
-        },
-        isTG() { return !!window.Telegram?.WebApp?.initData; },
-        close() { App.tg.close(); }
+            try { App.tg.HapticFeedback.notificationOccurred(type); } catch(e) {}
+        }
     }
 };
 
 window.onload = () => App.init();
 </script>
 </body>
-</html>
+    </html>
+    
