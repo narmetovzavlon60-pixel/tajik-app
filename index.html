@@ -3,432 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tajik Pro: Fixed</title>
+    <title>Tajik Pro Max</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg: var(--tg-theme-bg-color, #0F0F1A);
-            --surface: var(--tg-theme-secondary-bg-color, #1A1A2E);
-            --primary: var(--tg-theme-button-color, #FFB74D);
-            --text: var(--tg-theme-text-color, #E0E0E0);
-            --hint: #888;
-            --success: #4CAF50;
-            --error: #FF5252;
-            --gold: #FFD700; --silver: #C0C0C0; --bronze: #CD7F32;
+            --bg: #0F0F1A; --surface: #1A1A2E; --primary: #FFB74D;
+            --text: #E0E0E0; --success: #4CAF50; --error: #FF5252;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
         body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        /* ХЕДЕР */
-        header { padding: 10px 20px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .user-block { display: flex; align-items: center; gap: 10px; }
-        .user-avatar { width: 35px; height: 35px; background: var(--primary); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; text-transform: uppercase; }
-        #user-name { font-weight: 500; font-size: 0.95rem; }
-        #xp-display { font-weight: bold; color: var(--primary); }
+        header { padding: 15px 20px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); }
+        #u-xp { color: var(--primary); font-weight: bold; font-size: 1.2rem; }
 
-        /* РОУТЕР И СТРАНИЦЫ */
-        main { flex: 1; position: relative; overflow: hidden; }
-        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 20px; display: none; overflow-y: auto; }
-        .page.active { display: block; z-index: 10; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        main { flex: 1; position: relative; overflow-y: auto; padding-bottom: 70px; }
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* МЕНЮ */
-        .menu-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-        .menu-card { background: var(--surface); padding: 18px; border-radius: 14px; display: flex; align-items: center; gap: 15px; cursor: pointer; position: relative; border: 1px solid rgba(255,255,255,0.03); }
-        .menu-card:active { transform: scale(0.97); background: rgba(255,255,255,0.02); }
-        .menu-card-icon { font-size: 1.8rem; width: 40px; text-align: center; }
-        .menu-card-title { font-weight: bold; font-size: 1.05rem; color: var(--text); }
-        .menu-card-subtitle { font-size: 0.8rem; color: var(--hint); }
-        .menu-card-xp { position: absolute; top: 10px; right: 15px; font-size: 0.7rem; color: var(--primary); font-weight: bold; }
+        .menu-card { background: var(--surface); padding: 20px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--primary); cursor: pointer; }
+        .menu-card:active { transform: scale(0.98); }
 
-        /* ТАБ-БАР */
-        .tab-bar { background: var(--surface); display: flex; padding: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .tab-item { color: var(--hint); text-align: center; flex: 1; padding: 5px; cursor: pointer; opacity: 0.6; }
-        .tab-item.active { color: var(--primary); opacity: 1; }
-        .tab-icon { font-size: 1.2rem; }
-        .tab-label { font-size: 0.7rem; font-weight: 500; }
+        .game-card { width: 100%; height: 200px; background: var(--surface); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin-bottom: 30px; border: 2px solid rgba(255,183,77,0.3); }
+        
+        .grid-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .opt-btn { background: var(--surface); border: 1px solid var(--primary); color: white; padding: 20px; border-radius: 12px; font-size: 1.1rem; }
+        
+        .sentence-zone { min-height: 80px; background: rgba(255,255,255,0.05); border: 2px dashed var(--primary); border-radius: 15px; padding: 10px; margin: 20px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { background: var(--primary); color: #000; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .chip.pool { background: var(--surface); color: var(--text); border: 1px solid var(--primary); }
 
-        /* РЕЙТИНГ */
-        .lb-item { display: flex; align-items: center; gap: 10px; padding: 10px 15px; background: var(--surface); border-radius: 10px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.02); }
-        .lb-item.me { border-color: var(--primary); background: rgba(255,183,77,0.03); }
-        .lb-rank { width: 20px; font-weight: bold; text-align: center; }
-        .rank-1 { color: var(--gold); } .rank-2 { color: var(--silver); } .rank-3 { color: var(--bronze); }
-        .lb-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
-        .lb-info { flex: 1; }
-        .lb-name { font-size: 0.9rem; }
-        .lb-xp { font-size: 0.75rem; color: var(--primary); font-weight: bold; }
-
-        /* ИГРЫ */
-        .swipe-card { width: 100%; max-width: 280px; height: 280px; background: var(--primary); color: #000; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; margin: 15px auto; text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
-        .game-opt-btn { flex: 1; padding: 18px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; text-align: center; font-weight: 500; cursor: pointer; background: var(--surface); color: var(--text); }
-        .sentence-area { min-height: 70px; background: rgba(0,0,0,0.15); border-radius: 12px; padding: 12px; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 6px; }
-        .chip { background: var(--surface); border: 1px solid rgba(255,255,255,0.08); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; color: var(--text); }
-        .btn { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; font-size: 0.95rem; margin-top: 10px; cursor: pointer; }
-
-        h2 { font-size: 1.3rem; margin-bottom: 4px; }
-        p.subtitle { color: var(--hint); font-size: 0.85rem; margin-bottom: 15px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--surface); display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .nav-item { font-size: 0.8rem; text-align: center; opacity: 0.6; }
+        .nav-item.active { opacity: 1; color: var(--primary); }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="user-block">
-        <div class="user-avatar" id="u-ava">M</div>
-        <div id="u-name">Мехмон</div>
-    </div>
-    <div style="font-weight: bold;">⭐ <span id="u-xp">0</span></div>
+    <div id="u-info">👤 <span id="u-name">Мехмон</span></div>
+    <div>⭐ <span id="u-xp">0</span></div>
 </header>
 
 <main>
     <section id="p-home" class="page active">
-        <h2>Омӯзиш</h2>
-        <p class="subtitle">Игры для изучения языка</p>
-        <div class="menu-grid">
-            <div class="menu-card" id="btn-go-duels">
-                <div class="menu-card-xp">+10 XP</div>
-                <div class="menu-card-icon">⚔️</div>
-                <div class="menu-card-info">
-                    <div class="menu-card-title">Дуэли слов</div>
-                    <div class="menu-card-subtitle">Выбери перевод</div>
-                </div>
-            </div>
-            <div class="menu-card" id="btn-go-builder">
-                <div class="menu-card-xp">+20 XP</div>
-                <div class="menu-card-icon">🧱</div>
-                <div class="menu-card-info">
-                    <div class="menu-card-title">Сборщик фраз</div>
-                    <div class="menu-card-subtitle">Составь предложение</div>
-                </div>
-            </div>
+        <h2 style="margin-bottom: 20px;">Интихоби бозӣ</h2>
+        <div class="menu-card" onclick="App.game.duels.init()">
+            <h3>⚔️ Дуэли слов</h3>
+            <p style="font-size: 0.8rem; opacity: 0.7;">Быстрый перевод слов</p>
         </div>
-    </section>
-
-    <section id="p-rate" class="page">
-        <h2>Пешсафон</h2>
-        <p class="subtitle">Топ игроков этой недели</p>
-        <div id="lb-cont"></div>
+        <div class="menu-card" onclick="App.game.build.init()">
+            <h3>🧱 Сборщик фраз</h3>
+            <p style="font-size: 0.8rem; opacity: 0.7;">Составь предложение из кусочков</p>
+        </div>
     </section>
 
     <section id="g-duels" class="page">
-        <div id="q-card" class="swipe-card">...</div>
-        <div style="display:flex; gap:10px;">
-            <button class="game-opt-btn" id="opt-l"></button>
-            <button class="game-opt-btn" id="opt-r"></button>
-        </div>
+        <div id="d-word" class="game-card">...</div>
+        <div class="grid-opts" id="d-opts"></div>
     </section>
 
     <section id="g-build" class="page">
-        <h3 id="b-q" style="text-align:center; font-size: 1.1rem; margin-bottom: 8px;"></h3>
-        <div id="b-targ" class="sentence-area"></div>
-        <div id="b-pool" style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;"></div>
-        <button class="btn" id="b-check">Проверить</button>
+        <h3 id="b-task" style="text-align: center; margin-bottom: 15px;"></h3>
+        <div id="b-target" class="sentence-zone"></div>
+        <div id="b-pool" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;"></div>
+        <button onclick="App.game.build.check()" style="width:100%; margin-top:20px; padding:15px; background:var(--primary); border:none; border-radius:10px; font-weight:bold;">ПРОВЕРИТЬ</button>
     </section>
 </main>
 
-<nav class="tab-bar">
-    <div class="tab-item active" id="tab-h">
-        <div class="tab-icon">🏠</div>
-        <div class="tab-label">Главная</div>
-    </div>
-    <div class="tab-item" id="tab-r">
-        <div class="tab-icon">🏆</div>
-        <div class="tab-label">Рейтинг</div>
-    </div>
+<nav class="nav-bar">
+    <div class="nav-item active" onclick="App.nav('p-home')">🏠<br>Главная</div>
+    <div class="nav-item" onclick="App.nav('p-home')">🏆<br>Рейтинг</div>
 </nav>
 
 <script>
-// Глобальный отлов ошибок для отладки на Redmi
-window.onerror = function(msg, url, line) {
-    alert("Ошибка: " + msg + "\nСтрока: " + line);
-    return false;
-};
-
 const App = {
     tg: window.Telegram.WebApp,
-    xp: parseInt(localStorage.getItem('tg_xp_v3')) || 0,
+    xp: parseInt(localStorage.getItem('xp_save')) || 0,
     
-    // Имитация базы данных
-    data: {
-        vocab: [
-            {q:'Китоб', a:'Книга'}, {q:'Модар', a:'Мать'},
-            {q:'Нон', a:'Хлеб'}, {q:'Об', a:'Вода'},
-            {q:'Хона', a:'Дом'}, {q:'Шаҳр', a:'Город'}
+    // Расширенная база данных
+    db: {
+        words: [
+            {q:'Нон', a:'Хлеб'}, {q:'Об', a:'Вода'}, {q:'Китоб', a:'Книга'},
+            {q:'Хона', a:'Дом'}, {q:'Шаҳр', a:'Город'}, {q:'Дӯст', a:'Друг'},
+            {q:'Осмон', a:'Небо'}, {q:'Хуршед', a:'Солнце'}, {q:'Мактаб', a:'Школа'}
         ],
-        sentences: [
-            {ru:'Я иду в школу', tg:['Ман', 'ба', 'мактаб', 'меравам']},
-            {ru:'Мать читает книгу', tg:['Модар', 'китоб', 'мехонад']}
-        ],
-        bots: [
-            {name: "Davron_Pro", xp: 2550}, {name: "Malika_Learn", xp: 1980},
-            {name: "Umed_99", xp: 1420}, {name: "Sitora_TJ", xp: 950}
+        phrases: [
+            {ru:'Я пью воду', tg:['Ман', 'об', 'мехӯрам']},
+            {ru:'Книга на столе', tg:['Китоб', 'дар', 'болои', 'миз', 'аст']},
+            {ru:'Мы идем домой', tg:['Мо', 'ба', 'хона', 'меравем']}
         ]
     },
 
-    init: function() {
+    init() {
         this.tg.ready();
         this.tg.expand();
-        this.syncXP(0);
-        this.bindEvents();
-        
-        // Кнопка Назад в ТГ
-        this.tg.BackButton.onClick(function() {
-            if (!document.getElementById('p-home').classList.contains('active')) {
-                App.router.go('p-home');
-            } else {
-                App.tg.close();
-            }
-        });
+        this.updateXP(0);
+        document.getElementById('u-name').innerText = this.tg.initDataUnsafe?.user?.first_name || "Мехмон";
     },
 
-    // Назначаем обработчики нажатий СТАРЫМ НАДЕЖНЫМ СПОСОБОМ
-    bindEvents: function() {
-        // Навигация
-        document.getElementById('tab-h').onclick = function() { App.router.go('p-home'); };
-        document.getElementById('tab-r').onclick = function() { App.router.go('p-rate'); };
-        
-        // Кнопки меню
-        document.getElementById('btn-go-duels').onclick = function() { App.router.go('g-duels'); };
-        document.getElementById('btn-go-builder').onclick = function() { App.router.go('g-build'); };
-        
-        // Кнопка проверки в сборщике
-        document.getElementById('b-check').onclick = function() { App.games.builder.check(); };
+    nav(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id !== 'p-home') this.tg.BackButton.show();
+        else this.tg.BackButton.hide();
     },
 
-    router: function() {
-        var currPage = 'p-home';
-        return {
-            go: function(pageId) {
-                // Скрываем все
-                var pages = document.querySelectorAll('.page');
-                for(var i=0; i<pages.length; i++) pages[i].classList.remove('active');
-                
-                var tabs = document.querySelectorAll('.tab-item');
-                for(var i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
+    updateXP(v) {
+        this.xp += v;
+        localStorage.setItem('xp_save', this.xp);
+        document.getElementById('u-xp').innerText = this.xp;
+    },
 
-                var tabBar = document.querySelector('.tab-bar');
-
-                // Логика страниц
-                if (pageId === 'p-home') {
-                    App.tg.BackButton.hide();
-                    tabBar.style.display = 'flex';
-                    document.getElementById('tab-h').classList.add('active');
-                } else if (pageId === 'p-rate') {
-                    App.tg.BackButton.show();
-                    tabBar.style.display = 'flex';
-                    document.getElementById('tab-r').classList.add('active');
-                    App.modules.leaderboard.render();
-                } else {
-                    // Игры
-                    App.tg.BackButton.show();
-                    tabBar.style.display = 'none';
-                    if (pageId === 'g-duels') App.games.duels.start();
-                    if (pageId === 'g-build') App.games.builder.start();
-                }
-
-                // Показываем нужную
-                document.getElementById(pageId).classList.add('active');
-                currPage = pageId;
+    utils: {
+        shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
-        };
-    }(),
-
-    modules: {
-        leaderboard: {
-            render: function() {
-                var cont = document.getElementById('lb-cont');
-                cont.innerHTML = '';
-                
-                var list = [...App.data.bots];
-                var myName = App.tg.initDataUnsafe?.user?.first_name || "Ты";
-                list.push({name: myName, xp: App.xp, isMe: true});
-                
-                // Сортировка
-                list.sort(function(a, b) { return b.xp - a.xp; });
-                
-                for(var i=0; i<list.length; i++) {
-                    var p = list[i];
-                    var rank = i + 1;
-                    var item = document.createElement('div');
-                    item.className = 'lb-item' + (p.isMe ? ' me' : '');
-                    
-                    var rankCls = '';
-                    if(rank === 1) rankCls = 'rank-1';
-                    if(rank === 2) rankCls = 'rank-2';
-                    if(rank === 3) rankCls = 'rank-3';
-
-                    item.innerHTML = '<div class="lb-rank '+rankCls+'">'+rank+'</div>' +
-                                   '<div class="lb-avatar">'+p.name.charAt(0)+'</div>' +
-                                   '<div class="lb-info"><div class="lb-name">'+p.name+'</div>' +
-                                   '<div class="lb-xp">'+p.xp+' XP</div></div>' +
-                                   (rank<=3 ? '<div>'+(rank===1?'🥇':rank===2?'🥈':'🥉')+'</div>' : '');
-                    cont.appendChild(item);
-                }
-            }
+            return array;
         }
     },
 
-    games: {
+    game: {
         duels: {
-            current: null,
-            start: function() {
+            queue: [],
+            init() {
+                this.queue = App.utils.shuffle([...App.db.words]);
+                App.nav('g-duels');
                 this.next();
             },
-            next: function() {
-                var card = document.getElementById('q-card');
-                var btnL = document.getElementById('opt-l');
-                var btnR = document.getElementById('opt-r');
+            next() {
+                if(this.queue.length === 0) this.queue = App.utils.shuffle([...App.db.words]);
+                const cur = this.queue.pop();
+                const card = document.getElementById('d-word');
+                card.innerText = cur.q;
+                card.style.background = 'var(--surface)';
+
+                let wrong = App.db.words.filter(w => w.a !== cur.a);
+                let alt = wrong[Math.floor(Math.random()*wrong.length)].a;
                 
-                // Сброс стилей
-                card.style.background = 'var(--primary)';
-                card.style.color = '#000';
-
-                // Выбор вопроса
-                this.current = App.data.vocab[Math.floor(Math.random()*App.data.vocab.length)];
-                card.textContent = this.current.q;
-
-                // Выбор неправильного
-                var wrong = App.data.vocab[Math.floor(Math.random()*App.data.vocab.length)];
-                while(wrong.q === this.current.q) {
-                    wrong = App.data.vocab[Math.floor(Math.random()*App.data.vocab.length)];
-                }
-
-                // Рендер кнопок
-                if (Math.random() > 0.5) {
-                    btnL.textContent = this.current.a; btnL.onclick = function() { App.games.duels.check(true); };
-                    btnR.textContent = wrong.a; btnR.onclick = function() { App.games.duels.check(false); };
-                } else {
-                    btnL.textContent = wrong.a; btnL.onclick = function() { App.games.duels.check(false); };
-                    btnR.textContent = this.current.a; btnR.onclick = function() { App.games.duels.check(true); };
-                }
-            },
-            check: function
-(isCorrect) {
-                var card = document.getElementById('q-card');
-                if (isCorrect) {
-                    App.platform.haptic('success');
-                    App.syncXP(10);
-                    card.style.background = 'var(--success)'; card.style.color = '#fff';
-                } else {
-                    App.platform.haptic('error');
-                    card.style.background = 'var(--error)'; card.style.color = '#fff';
-                }
-                // Отключаем кнопки на время паузы
-                document.getElementById('opt-l').onclick = null;
-                document.getElementById('opt-r').onclick = null;
-                setTimeout(function() { App.games.duels.next(); }, 600);
+                const opts = App.utils.shuffle([cur.a, alt]);
+                const cont = document.getElementById('d-opts');
+                cont.innerHTML = '';
+                
+                opts.forEach(o => {
+                    const btn = document.createElement('button');
+                    btn.className = 'opt-btn';
+                    btn.innerText = o;
+                    btn.onclick = () => {
+                        if(o === cur.a) {
+                            card.style.background = 'var(--success)';
+                            App.updateXP(10);
+                            setTimeout(() => this.next(), 500);
+                        } else {
+                            card.style.background = 'var(--error)';
+                            App.tg.HapticFeedback.notificationOccurred('error');
+                        }
+                    };
+                    cont.appendChild(btn);
+                });
             }
         },
-        builder: {
-            current: null,
-            answers: [],
-            start: function() {
-                this.current = App.data.sentences[Math.floor(Math.random()*App.data.sentences.length)];
-                this.answers = [];
+        build: {
+            curIdx: 0,
+            userWords: [],
+            init() {
+                this.curIdx = Math.floor(Math.random() * App.db.phrases.length);
+                this.userWords = [];
+                App.nav('g-build');
                 this.render();
             },
-            render: function() {
-                document.getElementById('b-q').textContent = this.current.ru;
+            render() {
+                const data = App.db.phrases[this.curIdx];
+                document.getElementById('b-task').innerText = data.ru;
                 
-                // Зона ответа
-                var targ = document.getElementById('b-targ');
-                targ.innerHTML = '';
-                for(var i=0; i<this.answers.length; i++) {
-                    (function(index) {
-                        var word = App.games.builder.answers[index];
-                        var chip = document.createElement('div');
-                        chip.className = 'chip';
-                        chip.textContent = word;
-                        chip.onclick = function() {
-                            App.games.builder.answers.splice(index, 1);
-                            App.games.builder.render();
-                        };
-                        targ.appendChild(chip);
-                    })(i);
-                }
+                const target = document.getElementById('b-target');
+                target.innerHTML = '';
+                this.userWords.forEach((w, i) => {
+                    const c = document.createElement('div');
+                    c.className = 'chip';
+                    c.innerText = w;
+                    c.onclick = () => { this.userWords.splice(i, 1); this.render(); };
+                    target.appendChild(c);
+                });
 
-                // Зона пула слов
-                var pool = document.getElementById('b-pool');
+                const pool = document.getElementById('b-pool');
                 pool.innerHTML = '';
-                
-                // Создаем копию слов и убираем те, что уже в ответе
-                var available = [...this.current.tg];
-                for(var i=0; i<this.answers.length; i++) {
-                    var idx = available.indexOf(this.answers[i]);
-                    if (idx > -1) available.splice(idx, 1);
-                }
+                // Показываем только те слова, которые еще не выбраны
+                let available = [...data.tg];
+                this.userWords.forEach(uw => {
+                    let idx = available.indexOf(uw);
+                    if(idx > -1) available.splice(idx, 1);
+                });
 
-                // Перемешиваем пул один раз
-                if(!this.shuffledPool || this.lastId !== this.current.id) {
-                    this.shuffledPool = [...this.current.tg].sort(function(){return Math.random()-0.5;});
-                    this.lastId = this.current.id;
-                }
-
-                // Рендерим только доступные слова из перемешанного пула
-                for(var i=0; i<this.shuffledPool.length; i++) {
-                    (function(word) {
-                        // Проверяем, доступно ли еще это слово
-                        var avIdx = available.indexOf(word);
-                        if (avIdx > -1) {
-                            var chip = document.createElement('div');
-                            chip.className = 'chip';
-                            chip.textContent = word;
-                            chip.onclick = function() {
-                                App.games.builder.answers.push(word);
-                                App.games.builder.render();
-                            };
-                            pool.appendChild(chip);
-                            available.splice(avIdx, 1); // Помечаем как использованное для дубликатов
-                        }
-                    })(this.shuffledPool[i]);
-                }
+                available.forEach(w => {
+                    const c = document.createElement('div');
+                    c.className = 'chip pool';
+                    c.innerText = w;
+                    c.onclick = () => { this.userWords.push(w); this.render(); };
+                    pool.appendChild(c);
+                });
             },
-            check: function() {
-                var isOk = JSON.stringify(this.answers) === JSON.stringify(this.current.tg);
-                var btn = document.getElementById('b-check');
-                if (isOk) {
-                    App.platform.haptic('success');
-                    App.syncXP(20);
-                    btn.style.background = 'var(--success)';
-                    setTimeout(function() {
-                        btn.style.background = 'var(--primary)';
-                        App.games.builder.start();
-                    }, 800);
+            check() {
+                const data = App.db.phrases[this.curIdx];
+                if(this.userWords.join(' ') === data.tg.join(' ')) {
+                    App.updateXP(20);
+                    App.tg.HapticFeedback.notificationOccurred('success');
+                    // Переход к следующему
+                    this.curIdx = (this.curIdx + 1) % App.db.phrases.length;
+                    this.userWords = [];
+                    this.render();
                 } else {
-                    App.platform.haptic('error');
-                    btn.style.background = 'var(--error)';
-                    alert("Неверный порядок слов. Попробуй еще раз.");
-                    setTimeout(function() { btn.style.background = 'var(--primary)'; }, 800);
+                    alert("Хато! Попробуй другой порядок.");
+                    App.tg.HapticFeedback.notificationOccurred('warning');
                 }
             }
-        }
-    },
-
-    syncXP: function(add) {
-        this.xp += add;
-        localStorage.setItem('tg_xp_v3', this.xp);
-        document.getElementById('u-xp').textContent = this.xp;
-        
-        // Данные юзера
-        var user = this.tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById('u-name').textContent = user.first_name;
-            var ava = document.getElementById('u-ava');
-            ava.textContent = user.first_name.charAt(0);
-            ava.style.background = this.tg.themeParams.button_color || '#FFB74D';
-        }
-    },
-
-    platform: {
-        haptic: function(type) {
-            try { App.tg.HapticFeedback.notificationOccurred(type); } catch(e) {}
         }
     }
 };
 
-// Запуск
-window.onload = function() { App.init(); };
-
+App.init();
+App.tg.BackButton.onClick(() => App.nav('p-home'));
 </script>
 </body>
 </html>
