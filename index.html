@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tajik Pro: Ultra Fix</title>
+    <title>Tajik Pro: Cloud Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --bg: #0F0F1A; --surf: #1A1A2E; --prim: #FFB74D; --text: #E0E0E0; --green: #4CAF50; --red: #FF5252; }
@@ -104,6 +104,24 @@ const db = {
     ]
 };
 
+function saveProgress() {
+    localStorage.setItem('xp_v6', xp);
+    if (tg.CloudStorage) {
+        tg.CloudStorage.setItem('user_xp', xp.toString());
+    }
+}
+
+function loadFromCloud() {
+    if (tg.CloudStorage) {
+        tg.CloudStorage.getItem('user_xp', (err, value) => {
+            if (!err && value) {
+                const cloudXP = parseInt(value);
+                if (cloudXP > xp) { xp = cloudXP; updateUI(); }
+            }
+        });
+    }
+}
+
 function go(id) {
     document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
     document.getElementById(id).style.display = 'block';
@@ -120,19 +138,21 @@ function end() {
     clearInterval(window.tmr);
     document.getElementById('res-info').innerText = `XP: +${sessionXP} | Комбо: x${maxCombo}`;
     document.getElementById('res-modal').style.display = 'flex';
+    saveProgress();
 }
 
-// --- SPRINT ---
 let sprCur = false;
 function startSprint() {
     lives = 3; sessionXP = 0; combo = 0; maxCombo = 0;
     updateUI(); go('g-sprint'); nextSprint();
     let t = 30;
+    if(window.tmr) clearInterval(window.tmr);
     window.tmr = setInterval(() => {
         t--; document.getElementById('timer').innerText = t + 's';
         if(t <= 0) end();
     }, 1000);
 }
+
 function nextSprint() {
     const isTrue = Math.random() > 0.5;
     const w = db.words[Math.floor(Math.random()*db.words.length)];
@@ -140,15 +160,19 @@ function nextSprint() {
     sprCur = isTrue;
     document.getElementById('spr-a').innerText = isTrue ? w.a : db.words[Math.floor(Math.random()*db.words.length)].a;
 }
+
 function checkSprint(ans) {
     if(ans === sprCur) { 
         combo++; if(combo > maxCombo) maxCombo = combo;
         let gain = 10 + combo; sessionXP += gain; xp += gain;
-    } else { lives--; combo = 0; }
+        tg.HapticFeedback.impactOccurred('light');
+    } else { 
+        lives--; combo = 0; 
+        tg.HapticFeedback.notificationOccurred('error');
+    }
     updateUI(); if(lives > 0) nextSprint();
 }
 
-// --- DUELS ---
 let duelAns = "";
 function startDuels() { lives = 3; sessionXP = 0; updateUI(); go('g-duels'); nextDuel(); }
 function nextDuel() {
@@ -165,16 +189,21 @@ function nextDuel() {
     opts.forEach(o => {
         const b = document.createElement('button'); b.className = 'btn-opt'; b.innerText = o;
         b.onclick = () => {
-            if(o === duelAns) { xp += 10; sessionXP += 10; nextDuel(); }
-            else { lives--; updateUI(); if(lives > 0) nextDuel(); }
+            if(o === duelAns) { 
+                xp += 10; sessionXP += 10; 
+                tg.HapticFeedback.impactOccurred('medium');
+                nextDuel(); 
+            } else { 
+                lives--; tg.HapticFeedback.notificationOccurred('warning');
+                updateUI(); if(lives > 0) nextDuel(); 
+            }
         };
         box.appendChild(b);
     });
 }
 
-// --- BUILDER ---
 let curP = null; let chosen = [];
-function startBuild() { go('g-build'); chosen = []; nextBuild(); }
+function startBuild() { lives = 3; sessionXP = 0; go('g-build'); chosen = []; nextBuild(); }
 function nextBuild() {
     curP = db.phrases[Math.floor(Math.random()*db.phrases.length)];
     document.getElementById('build-task').innerText = curP.ru;
@@ -198,13 +227,21 @@ function renderBuild() {
     });
 }
 function checkBuild() {
-    if(chosen.join(' ') === curP.tg.join(' ')) { xp += 30; sessionXP += 30; alert("Дуруст!"); startBuild(); }
-    else { alert("Хато!"); lives--; updateUI(); }
+    if(chosen.join(' ') === curP.tg.join(' ')) { 
+        xp += 30; sessionXP += 30; 
+        tg.HapticFeedback.notificationOccurred('success');
+        startBuild(); 
+    } else { 
+        lives--; tg.HapticFeedback.notificationOccurred('error');
+        updateUI(); 
+    }
 }
 
 tg.ready();
 tg.expand();
+loadFromCloud();
 updateUI();
 </script>
 </body>
-</html>
+            </html>
+        
